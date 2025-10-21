@@ -9,25 +9,48 @@ import { inngest } from "./client";
 export const chat = inngest.createFunction(
   { id: "chat" },
   { event: "chat/start" },
-  async ({ step, publish }) => {
+  async ({ event, step, publish }) => {
+    const { message, sessionId = userId } = event.data;
+
     await step.run("ai-stream", async () => {
       const { textStream } = streamText({
-        model: openai("gpt-4.1-mini"),
+        model: openai("gpt-4o-mini"),
         messages: [
-          { role: "user", content: "Explain why developers love Inngest?" },
+          {
+            role: "system",
+            content: "You are a helpful AI assistant. Be concise and friendly.",
+          },
+          { role: "user", content: message },
         ],
       });
+
+      let fullResponse = "";
+
       for await (const textPart of textStream) {
-        console.log("AI Stream Part:", textPart);
+        fullResponse += textPart;
         await publish({
-          channel: `user:${userId}`,
+          channel: `user:${sessionId}`,
           topic: "ai",
           data: {
-            message: textPart,
+            role: "assistant",
+            content: fullResponse,
+            isStreaming: true,
           },
         });
       }
+
+      // Send final message to indicate streaming is complete
+      await publish({
+        channel: `user:${sessionId}`,
+        topic: "ai",
+        data: {
+          role: "assistant",
+          content: fullResponse,
+          isStreaming: false,
+        },
+      });
     });
+
     return { success: true };
   }
 );
