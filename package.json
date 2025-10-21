@@ -8,6 +8,9 @@
     "start": "next start"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^2.0.53",
+    "@inngest/realtime": "^0.4.4",
+    "ai": "^5.0.76",
     "inngest": "^3.44.3",
     "next": "15.5.6",
     "react": "19.1.0",
